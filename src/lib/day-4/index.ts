@@ -25,7 +25,7 @@ class Position {
   }
 }
 
-class Value {
+class BoardNumber {
   readonly value: number;
   #positions: Position[] = [];
 
@@ -44,18 +44,18 @@ class Value {
   }
 }
 
-interface ValueMap {
-  [index: number]: Value;
+interface BoardNumberMap {
+  [index: number]: BoardNumber;
 }
 
-class Values {
-  #values: ValueMap = {};
+class BoardNumbers {
+  #values: BoardNumberMap = {};
 
-  of(value: number): Value | undefined {
+  of(value: number): BoardNumber | undefined {
     return this.#values[value];
   }
 
-  add(value: Value) {
+  add(value: BoardNumber) {
     this.#values[value.value] = value;
   }
 
@@ -88,7 +88,7 @@ function cellKey(args: CellKeyArgs) {
 }
 
 class Board {
-  readonly #values: Values;
+  readonly #values: BoardNumbers;
   readonly #cells: Cells;
   readonly #dimension: number;
 
@@ -97,7 +97,7 @@ class Board {
     cells,
     dimension,
   }: {
-    values: Values;
+    values: BoardNumbers;
     cells: Cells;
     dimension: number;
   }) {
@@ -228,13 +228,13 @@ export function toBoard(lines: number[][]): Board {
     cellMap[cellKey(cell)] = cell;
   }
 
-  const values: Values = new Values();
+  const values: BoardNumbers = new BoardNumbers();
   for (const cell of allCells) {
     let cells = values.of(cell.value);
     if (cells) {
       cells.add(cell);
     } else {
-      values.add((cells = new Value(cell.value)));
+      values.add((cells = new BoardNumber(cell.value)));
       cells.add(cell);
     }
   }
