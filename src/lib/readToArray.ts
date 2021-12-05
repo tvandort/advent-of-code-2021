@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as readline from 'node:readline';
 
-export async function readToArray<T>(
+export async function readToArray<T = string>(
   filePath: string,
   transform: (line: string) => T
 ): Promise<T[]> {
