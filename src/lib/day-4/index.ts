@@ -51,7 +51,7 @@ interface ValueMap {
 class Values {
   #values: ValueMap = {};
 
-  of(value: number): Value {
+  of(value: number): Value | undefined {
     return this.#values[value];
   }
 
@@ -81,9 +81,9 @@ type CellKeyArgs = CellXyArgs | CellPositionArgs;
 
 function cellKey(args: CellKeyArgs) {
   if (isCellPositionArg(args)) {
-    return `(${args.position.x},${args.position.y}))`;
+    return `(${args.position.x},${args.position.y})`;
   } else {
-    return `(${args.x},${args.y}))`;
+    return `(${args.x},${args.y})`;
   }
 }
 
@@ -111,7 +111,7 @@ class Board {
   }
 
   mark(value: number) {
-    this.#values.of(value).mark();
+    this.#values.of(value)?.mark();
   }
 
   isMarked(x: number, y: number) {
@@ -122,7 +122,7 @@ class Board {
     for (let x = 0; x < this.#dimension; x++) {
       let columnCompleted = true;
       for (let y = 0; y < this.#dimension; y++) {
-        columnCompleted = columnCompleted && this.#cells.of(x, y).isMarked;
+        columnCompleted = columnCompleted && this.isMarked(x, y);
       }
       if (columnCompleted) {
         return true;
@@ -141,6 +141,10 @@ class Board {
 
     return false;
   }
+
+  score() {
+    return this.#cells.score();
+  }
 }
 
 interface CellMap {
@@ -149,14 +153,60 @@ interface CellMap {
 
 class Cells {
   #cells: CellMap;
+  #cellsArray: Position[];
 
-  constructor(cells: CellMap) {
+  constructor({
+    cells,
+    cellsArray,
+  }: {
+    cells: CellMap;
+    cellsArray: Position[];
+  }) {
     this.#cells = cells;
+    this.#cellsArray = cellsArray;
   }
 
   of(x: number, y: number) {
-    return this.#cells[cellKey({ x, y })];
+    const cell = this.#cells[cellKey({ x, y })];
+    if (!cell) {
+      throw new Error(`${cellKey({ x, y })} not found`);
+    }
+    return cell;
   }
+
+  score() {
+    return this.#cellsArray
+      .filter((cell) => !cell.isMarked)
+      .map((cell) => cell.value)
+      .reduce((accumulator, next) => accumulator + next, 0);
+  }
+}
+
+export function extract(lines: string[]) {
+  const boards: number[][][] = [];
+  let nextBoard: number[][] = [];
+  for (let index = 2; index < lines.length; index++) {
+    const line = lines[index];
+
+    if (line !== '') {
+      nextBoard.push(
+        line
+          .split(' ')
+          .filter((item) => item.trim().length > 0)
+          .map((number) => parseInt(number))
+      );
+    }
+
+    if (line === '' || index === lines.length - 1) {
+      boards.push(nextBoard);
+      nextBoard = [];
+    }
+  }
+
+  return {
+    calls: lines[0].split(',').map((number) => parseInt(number)),
+    boards,
+  };
 }
 
 export function toBoard(lines: number[][]): Board {
@@ -180,20 +230,92 @@ export function toBoard(lines: number[][]): Board {
 
   const values: Values = new Values();
   for (const cell of allCells) {
-    let cells: Value;
-    if (values.of(cell.value)) {
-      cells = values.of(cell.value);
+    let cells = values.of(cell.value);
+    if (cells) {
+      cells.add(cell);
     } else {
       values.add((cells = new Value(cell.value)));
+      cells.add(cell);
     }
-    cells.add(cell);
   }
 
   return new Board({
-    cells: new Cells(cellMap),
+    cells: new Cells({ cells: cellMap, cellsArray: allCells }),
     values,
     dimension: lines[0].length,
   });
 }
 
-export function score() {}
+export function toGame(boards: ReturnType<typeof extract>['boards']) {
+  return new Game(boards.map((lines) => toBoard(lines)));
+}
+
+class Game {
+  #boards: Board[];
+  #finishedBoards: Board[] = [];
+
+  constructor(boards: Board[]) {
+    this.#boards = boards;
+  }
+
+  mark(number: number) {
+    this.#boards.forEach((board) => board.mark(number));
+  }
+
+  hasWinner() {
+    return this.#boards.some((board) => board.hasWon());
+  }
+
+  winningBoard() {
+    return this.#boards.filter((board) => board.hasWon())[0];
+  }
+
+  hasFinished() {
+    const finished = this.#boards.filter((board) => board.hasWon());
+    for (const board of finished) {
+      if (!this.#finishedBoards.includes(board)) {
+        this.#finishedBoards.push(board);
+      }
+    }
+
+    return this.#boards.every((board) => board.hasWon());
+  }
+
+  mostRecentlyCompletedBoard() {
+    return this.#finishedBoards[this.#finishedBoards.length - 1];
+  }
+}
+
+export async function score(filePath: string) {
+  const { calls, game } = await readGame(filePath);
+
+  for (const call of calls) {
+    game.mark(call);
+    if (game.hasWinner()) {
+      return call * game.winningBoard().score();
+    }
+  }
+
+  throw new Error('No winner.');
+}
+
+async function readGame(filePath: string) {
+  const lines = await readToArray(filePath, (line) => line);
+  const extracted = extract(lines);
+  const game = toGame(extracted.boards);
+
+  return { game, calls: extracted.calls };
+}
+
+export async function lastToWinScore(filePath: string) {
+  const { calls, game } = await readGame(filePath);
+
+  for (const call of calls) {
+    game.mark(call);
+    if (game.hasFinished()) {
+      return call * game.mostRecentlyCompletedBoard().score();
+    }
+  }
+
+  throw new Error('There are boards that are still incomplete.');
+}

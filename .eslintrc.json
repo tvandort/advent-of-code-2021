@@ -20,10 +20,6 @@
       "error",
       { "allowWholeFile": true }
     ],
-    "eslint-comments/no-unused-disable": "error",
-    "sort-imports": [
-      "error",
-      { "ignoreDeclarationSort": true, "ignoreCase": true }
-    ]
+    "eslint-comments/no-unused-disable": "error"
   }
 }
