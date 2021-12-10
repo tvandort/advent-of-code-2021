@@ -4,9 +4,11 @@ import {
   countPoints,
   parseVector,
   Point,
-  pointsOnVector,
+  axialPointsOnVector,
   pointsThatAppearMoreThanOnce,
   Vector,
+  diagonalPointsOnVector,
+  pointsThatAppearMoreThanOnceIncludingDiagonals,
 } from '.';
 
 const input = createInputGetter(__dirname);
@@ -28,7 +30,7 @@ test('string to vector with points', (t) => {
 
 test('that a horizontal zero length vector is correct', (t) => {
   const vector: Vector = { from: { x: 0, y: 0 }, to: { x: 1, y: 0 } };
-  t.deepEqual(pointsOnVector(vector), [
+  t.deepEqual(axialPointsOnVector(vector), [
     { x: 0, y: 0 },
     { x: 1, y: 0 },
   ]);
@@ -36,7 +38,7 @@ test('that a horizontal zero length vector is correct', (t) => {
 
 test('that a vertical zero length vector is correct', (t) => {
   const vector: Vector = { from: { x: 0, y: 0 }, to: { x: 0, y: 1 } };
-  t.deepEqual(pointsOnVector(vector), [
+  t.deepEqual(axialPointsOnVector(vector), [
     { x: 0, y: 0 },
     { x: 0, y: 1 },
   ]);
@@ -75,7 +77,7 @@ test('example for points > 1', async (t) => {
 
 test('points vector of length > 1', (t) => {
   const vec: Vector = { from: { x: 0, y: 9 }, to: { x: 5, y: 9 } };
-  t.deepEqual(pointsOnVector(vec), [
+  t.deepEqual(axialPointsOnVector(vec), [
     { x: 0, y: 9 },
     { x: 1, y: 9 },
     { x: 2, y: 9 },
@@ -87,4 +89,23 @@ test('points vector of length > 1', (t) => {
 
 test('actual for points > 1', async (t) => {
   t.is(await pointsThatAppearMoreThanOnce(actual), 3990);
+});
+
+test('drawing a 1 by 1 diagonal', async (t) => {
+  const vec: Vector = { from: { x: 0, y: 0 }, to: { x: 1, y: 1 } };
+  t.deepEqual(diagonalPointsOnVector(vec), [
+    {
+      x: 0,
+      y: 0,
+    },
+    { x: 1, y: 1 },
+  ]);
+});
+
+test('example works with diagonals', async (t) => {
+  t.is(await pointsThatAppearMoreThanOnceIncludingDiagonals(example), 12);
+});
+
+test('actual works with diagonals', async (t) => {
+  t.is(await pointsThatAppearMoreThanOnceIncludingDiagonals(actual), 21305);
 });
