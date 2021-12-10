@@ -5,10 +5,10 @@ import {
   parseVector,
   Point,
   axialPointsOnVector,
-  pointsThatAppearMoreThanOnce,
+  countAxialPointsThatAppearMoreThanOnce,
   Vector,
-  diagonalPointsOnVector,
-  pointsThatAppearMoreThanOnceIncludingDiagonals,
+  countPointsThatAppearMoreThanOnce,
+  pointsOnVector as getPointsOnVector,
 } from '.';
 
 const input = createInputGetter(__dirname);
@@ -72,7 +72,7 @@ test('that points can be counted', (t) => {
 });
 
 test('example for points > 1', async (t) => {
-  t.is(await pointsThatAppearMoreThanOnce(example), 5);
+  t.is(await countAxialPointsThatAppearMoreThanOnce(example), 5);
 });
 
 test('points vector of length > 1', (t) => {
@@ -88,12 +88,12 @@ test('points vector of length > 1', (t) => {
 });
 
 test('actual for points > 1', async (t) => {
-  t.is(await pointsThatAppearMoreThanOnce(actual), 3990);
+  t.is(await countAxialPointsThatAppearMoreThanOnce(actual), 3990);
 });
 
 test('drawing a 1 by 1 diagonal', async (t) => {
   const vec: Vector = { from: { x: 0, y: 0 }, to: { x: 1, y: 1 } };
-  t.deepEqual(diagonalPointsOnVector(vec), [
+  t.deepEqual(getPointsOnVector(vec), [
     {
       x: 0,
       y: 0,
@@ -103,9 +103,9 @@ test('drawing a 1 by 1 diagonal', async (t) => {
 });
 
 test('example works with diagonals', async (t) => {
-  t.is(await pointsThatAppearMoreThanOnceIncludingDiagonals(example), 12);
+  t.is(await countPointsThatAppearMoreThanOnce(example), 12);
 });
 
 test('actual works with diagonals', async (t) => {
-  t.is(await pointsThatAppearMoreThanOnceIncludingDiagonals(actual), 21305);
+  t.is(await countPointsThatAppearMoreThanOnce(actual), 21305);
 });

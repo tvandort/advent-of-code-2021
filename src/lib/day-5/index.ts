@@ -30,31 +30,30 @@ export function parseVector(vectorString: string) {
 }
 
 export function axialPointsOnVector(vector: Vector): Point[] {
-  const points: Point[] = [];
+  const points: Point[][] = [];
 
   const xNormal = Math.sign(vector.to.x - vector.from.x);
   const yNormal = Math.sign(vector.to.y - vector.from.y);
 
-  let start = vector.from;
   if (xNormal === 0 || yNormal === 0) {
-    do {
-      points.push(start);
-      start = {
-        x: start.x + xNormal,
-        y: start.y + yNormal,
-      };
-    } while (start.x !== vector.to.x || start.y !== vector.to.y);
-    points.push(vector.to);
+    points.push(pointsOnVector(vector));
   }
 
-  return points;
+  return points.flatMap((points) => points);
 }
 
-export function diagonalPointsOnVector(vector: Vector): Point[] {
+type PointKey = `(${number},${number})`;
+
+interface PointCounter {
+  key: PointKey;
+  count: number;
+  point: Point;
+}
+
+export function pointsOnVector(vector: Vector) {
   const points: Point[] = [];
   const xNormal = Math.sign(vector.to.x - vector.from.x);
   const yNormal = Math.sign(vector.to.y - vector.from.y);
-
   let start = vector.from;
   do {
     points.push(start);
@@ -64,16 +63,7 @@ export function diagonalPointsOnVector(vector: Vector): Point[] {
     };
   } while (start.x !== vector.to.x || start.y !== vector.to.y);
   points.push(vector.to);
-
   return points;
-}
-
-type PointKey = `(${number},${number})`;
-
-interface PointCounter {
-  key: PointKey;
-  count: number;
-  point: Point;
 }
 
 export function countPoints(points: Point[]) {
@@ -99,28 +89,20 @@ export function countPoints(points: Point[]) {
   return pointsArray;
 }
 
-export async function pointsThatAppearMoreThanOnce(filePath: string) {
-  const points = (
-    await readToArray(filePath, (line) =>
-      axialPointsOnVector(parseVector(line))
-    )
-  ).flatMap((points) => points);
-
-  const counted = countPoints(points);
-
-  return counted.filter((point) => point.count > 1).length;
+async function countWith(
+  filePath: string,
+  pointsOn: (vector: Vector) => Point[]
+) {
+  const points = (await readToArray(filePath, (line) => parseVector(line)))
+    .map((vector) => pointsOn(vector))
+    .flatMap((points) => points);
+  return countPoints(points).filter((point) => point.count > 1).length;
 }
 
-export async function pointsThatAppearMoreThanOnceIncludingDiagonals(
-  filePath: string
-) {
-  const points = (
-    await readToArray(filePath, (line) =>
-      diagonalPointsOnVector(parseVector(line))
-    )
-  ).flatMap((points) => points);
+export async function countAxialPointsThatAppearMoreThanOnce(filePath: string) {
+  return countWith(filePath, axialPointsOnVector);
+}
 
-  const counted = countPoints(points);
-
-  return counted.filter((point) => point.count > 1).length;
+export async function countPointsThatAppearMoreThanOnce(filePath: string) {
+  return countWith(filePath, pointsOnVector);
 }
