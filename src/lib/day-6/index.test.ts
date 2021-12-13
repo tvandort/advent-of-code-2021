@@ -1,31 +1,48 @@
 import test from 'ava';
 import { createInputGetter } from '../input';
-import { increment, incrementFish } from '.';
+import { FishCounter, incrementFish } from '.';
 
 const input = createInputGetter(__dirname);
 const example = input('example.txt');
 const actual = input('actual.txt');
 
-test('array of 1 increments correctly from one step', (t) => {
-  t.deepEqual(increment([3]), [2]);
+test('increments one day with one fish on 3 correctly', (t) => {
+  const counter = new FishCounter([3]);
+  t.is(counter.fishOnCycle(3), 1);
+
+  counter.incrementBy(1);
+
+  t.is(counter.fishOnCycle(3), 0);
+  t.is(counter.fishOnCycle(2), 1);
 });
 
-test('incrementing an array of 1 results in array of 0', (t) => {
-  t.deepEqual(increment([1]), [0]);
-});
+test('increments on day with fish on day 0 correctly', (t) => {
+  const counter = new FishCounter([0]);
 
-test('incrememnting an array of 0 results in both a new fish and the existing fish reset', (t) => {
-  t.deepEqual(increment([0]), [6, 8]);
+  t.is(counter.fishOnCycle(0), 1);
+
+  counter.incrementBy(1);
+
+  t.is(counter.fishOnCycle(8), 1);
+  t.is(counter.fishOnCycle(6), 1);
 });
 
 test('example input 18 days', async (t) => {
-  t.deepEqual(await incrementFish(example, 18), 26);
+  t.is(await incrementFish(example, 18), 26);
 });
 
 test('example input 80 days', async (t) => {
-  t.deepEqual(await incrementFish(example, 80), 5934);
+  t.is(await incrementFish(example, 80), 5934);
 });
 
 test('actual 80 days', async (t) => {
-  t.deepEqual(await incrementFish(actual, 80), 380243);
+  t.is(await incrementFish(actual, 80), 380243);
+});
+
+test('example 256', async (t) => {
+  t.is(await incrementFish(example, 256), 26984457539);
+});
+
+test('actual 256', async (t) => {
+  t.is(await incrementFish(actual, 256), 1708791884591);
 });
