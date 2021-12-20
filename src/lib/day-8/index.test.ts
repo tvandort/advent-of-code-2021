@@ -1,6 +1,7 @@
 import test from 'ava';
 import { createInputGetter } from '../input';
 import {
+  addFromFile,
   countOneFourSevenEight,
   detectEight,
   detectFour,
@@ -56,4 +57,33 @@ test('numbers from', (t) => {
     }),
     5353
   );
+});
+
+test('numbers from another', (t) => {
+  t.is(
+    determineNumbers({
+      input: [
+        'edbfga',
+        'begcd',
+        'cbg',
+        'gc',
+        'gcadebf',
+        'fbgde',
+        'acbgfd',
+        'abcde',
+        'gfcbed',
+        'gfec',
+      ],
+      output: ['fcgedb', 'cgb', 'dgebacf', 'gc'],
+    }),
+    9781
+  );
+});
+
+test('from example?', async (t) => {
+  t.is(await addFromFile(example), 61229);
+});
+
+test.only('from actual?', async (t) => {
+  t.is(await addFromFile(actual), 1016804);
 });

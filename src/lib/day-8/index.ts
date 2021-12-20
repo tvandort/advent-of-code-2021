@@ -113,10 +113,17 @@ function isEight(
 }
 
 function isNine(
-  { top, center, topRight, topLeft, bottomRight }: Segment,
+  { top, center, topRight, topLeft, bottomRight, bottom }: Segment,
   number: string
 ) {
-  return includesExactly(number, [top, center, topRight, topLeft, bottomRight]);
+  return includesExactly(number, [
+    top,
+    center,
+    topRight,
+    topLeft,
+    bottomRight,
+    bottom,
+  ]);
 }
 
 function isZero(
@@ -140,19 +147,17 @@ export function determineNumbers({
   input: string[];
   output: string[];
 }) {
-  const oneSegmentLetters = input.filter(detectOne);
-  if (oneSegmentLetters.length > 0) {
-    const [tr, br] = oneSegmentLetters[0].split('');
-    const topRight = tr;
-    const bottomRight = br;
-
-    const sevenSegmentLetters = input.filter(detectSeven);
-    if (sevenSegmentLetters.length > 0) {
-      const [t] = sevenSegmentLetters[0]
+  const oneSegmentLetters = input.filter(detectOne)[0];
+  if (oneSegmentLetters) {
+    const [tr, br] = oneSegmentLetters.split('');
+    let topRight = tr;
+    let bottomRight = br;
+    const sevenSegmentLetters = input.filter(detectSeven)[0];
+    if (sevenSegmentLetters) {
+      const [t] = sevenSegmentLetters
         .split('')
         .filter((letter) => ![topRight, bottomRight].includes(letter));
       const top = t;
-
       const threeSegmentPotentials = input.filter(
         (letters) =>
           letters.includes(top) &&
@@ -160,83 +165,167 @@ export function determineNumbers({
           letters.includes(topRight) &&
           letters.length === 5
       );
-
       const fourSegments = input
         .filter(detectFour)[0]
         .split('')
         .filter((letter) => ![topRight, bottomRight].includes(letter));
-
       const probablyThree = threeSegmentPotentials[0];
-      const middleIndex = probablyThree.includes(fourSegments[0]) ? 0 : 1;
+      if (probablyThree) {
+        const middleIndex = probablyThree.includes(fourSegments[0]) ? 0 : 1;
+        const center = fourSegments[middleIndex];
+        const topLeft = fourSegments[Math.abs(middleIndex - 1)];
 
-      const center = fourSegments[middleIndex];
-      const topLeft = fourSegments[Math.abs(middleIndex - 1)];
-
-      const fiveSegments = input.filter(
-        (letters) =>
-          letters.includes(top) &&
-          letters.includes(bottomRight) &&
-          letters.includes(topLeft) &&
-          letters.includes(center) &&
-          letters.length === 5
-      );
-      const bottom = fiveSegments[0]
-        .split('')
-        .filter(
-          (letter) => ![top, bottomRight, topLeft, center].includes(letter)
+        const fiveSegments = input.filter(
+          (letters) =>
+            letters.includes(top) &&
+            letters.includes(bottomRight) &&
+            letters.includes(topLeft) &&
+            letters.includes(center) &&
+            letters.length === 5
         )[0];
+        const fiveSegmentsSwapped = input.filter(
+          (letters) =>
+            letters.includes(top) &&
+            letters.includes(topRight) &&
+            letters.includes(topLeft) &&
+            letters.includes(center) &&
+            letters.length === 5
+        )[0];
+        if (fiveSegments) {
+          return secondToLast(
+            fiveSegments,
+            output,
+            center,
+            top,
+            topRight,
+            bottomRight,
+            topLeft
+          );
+        } else if (fiveSegmentsSwapped) {
+          const swap = topRight;
+          topRight = bottomRight;
+          bottomRight = swap;
 
-      const bottomLeft = ['a', 'b', 'c', 'd', 'e', 'f', 'g'].filter(
-        (letter) =>
-          ![bottom, top, center, bottomRight, topRight, topLeft].includes(
-            letter
-          )
-      )[0];
-
-      if (
-        center &&
-        top &&
-        topLeft &&
-        topRight &&
-        bottom &&
-        bottomRight &&
-        bottomLeft
-      ) {
-        const confirmedSegments: Segment = {
-          bottom,
-          top,
-          center,
-          bottomLeft,
-          bottomRight,
-          topRight,
-          topLeft,
-        };
-
-        const outputNumber: string[] = [];
-        const numberIdentifiers = [
-          isZero,
-          isOne,
-          isTwo,
-          isThree,
-          isFour,
-          isFive,
-          isSix,
-          isSeven,
-          isEight,
-          isNine,
-        ];
-        for (const number of output) {
-          for (let index = 0; index < numberIdentifiers.length; index++) {
-            if (numberIdentifiers[index](confirmedSegments, number)) {
-              outputNumber.push(index.toString());
-            }
-          }
+          return secondToLast(
+            fiveSegmentsSwapped,
+            output,
+            center,
+            top,
+            topRight,
+            bottomRight,
+            topLeft
+          );
+        } else {
+          throw Error('didnt find possible 5');
         }
+      } else {
+        throw Error('didnt find a possible 3');
+      }
+    } else {
+      throw Error('did not find 7');
+    }
+  } else {
+    throw Error('did not find 1');
+  }
 
-        return parseInt(outputNumber.join(''));
+  throw Error('ooopsies');
+}
+
+function secondToLast(
+  fiveSegments: string,
+  output: string[],
+  center: string,
+  top: string,
+  topRight: string,
+  bottomRight: string,
+  topLeft: string
+) {
+  const bottom = fiveSegments
+    .split('')
+    .filter(
+      (letter) => ![top, bottomRight, topLeft, center].includes(letter)
+    )[0];
+
+  const bottomLeft = ['a', 'b', 'c', 'd', 'e', 'f', 'g'].filter(
+    (letter) =>
+      ![bottom, top, center, bottomRight, topRight, topLeft].includes(letter)
+  )[0];
+
+  if (
+    center &&
+    top &&
+    topLeft &&
+    topRight &&
+    bottom &&
+    bottomRight &&
+    bottomLeft
+  ) {
+    return last(
+      bottom,
+      top,
+      center,
+      bottomLeft,
+      bottomRight,
+      topRight,
+      topLeft,
+      output
+    );
+  } else {
+    throw new Error('missing some segment 1');
+  }
+}
+
+function last(
+  bottom: string,
+  top: string,
+  center: string,
+  bottomLeft: string,
+  bottomRight: string,
+  topRight: string,
+  topLeft: string,
+  output: string[]
+) {
+  const confirmedSegments: Segment = {
+    bottom,
+    top,
+    center,
+    bottomLeft,
+    bottomRight,
+    topRight,
+    topLeft,
+  };
+
+  const outputNumber: string[] = [];
+  const numberIdentifiers = [
+    isZero,
+    isOne,
+    isTwo,
+    isThree,
+    isFour,
+    isFive,
+    isSix,
+    isSeven,
+    isEight,
+    isNine,
+  ];
+  for (const number of output) {
+    for (let index = 0; index < numberIdentifiers.length; index++) {
+      if (numberIdentifiers[index](confirmedSegments, number)) {
+        outputNumber.push(index.toString());
       }
     }
   }
 
-  throw Error('ooopsies');
+  return parseInt(outputNumber.join(''));
+}
+
+export async function addFromFile(filePath: string) {
+  const outputs = await readToArray(filePath, (line) => {
+    const [input, output] = line.split('|');
+    return { output: output.trim().split(' '), input: input.trim().split(' ') };
+  });
+
+  const numbers = outputs.map(determineNumbers);
+
+  return numbers.reduce((previous, current) => current + previous);
 }
