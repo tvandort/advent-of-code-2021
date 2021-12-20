@@ -6,6 +6,7 @@ import {
   detectFour,
   detectOne,
   detectSeven,
+  determineNumbers,
 } from '.';
 
 const input = createInputGetter(__dirname);
@@ -34,4 +35,25 @@ test('detects easy numbers', async (t) => {
 
 test('actual part 1', async (t) => {
   t.is(await countOneFourSevenEight(actual), 521);
+});
+
+test('numbers from', (t) => {
+  t.is(
+    determineNumbers({
+      input: [
+        'acedgfb',
+        'cdfbe',
+        'gcdfa',
+        'fbcad',
+        'dab',
+        'cefabd',
+        'cdfgeb',
+        'eafb',
+        'cagedb',
+        'ab',
+      ],
+      output: ['cdfeb', 'fcadb', 'cdfeb', 'cdbaf'],
+    }),
+    5353
+  );
 });
